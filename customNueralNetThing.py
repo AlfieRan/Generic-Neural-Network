@@ -59,7 +59,7 @@ class NueralNet:
             self.BackLayerNodes.append(node(self.LayerCount - 1, count, 0))
 
         startTime = time.time()
-        self.createConnections()
+        self.createConnections(self.createRandomConnectionWeights())
         createTime = time.time() - startTime
         print(f'Network took {createTime} seconds to create')
 
@@ -88,42 +88,47 @@ class NueralNet:
         try:
             return (1/(1+math.exp(-value)))
         except Exception:
-            print(-value)
+            print(f"Sigmoid function as gone wrong using value {value}")
 
-    def connectTwoNodes(self, NodeA: node, NodeB: node, Init_Value):
+    def connectTwoNodes(self, NodeA: node, NodeB: node, Init_Weight_Value):
         # This funky wunky function connects two Nodes by creating a connection object between the two
-        NewConnection = connection(NodeA.Layer, NodeA, NodeB, Init_Value)
+        NewConnection = connection(NodeA.Layer, NodeA, NodeB, Init_Weight_Value)
         return NewConnection
 
-    def connectNodeToNextLayer(self, NodeA: node, Initvalues:list):
+    def connectNodeToNextLayer(self, NodeA: node, InitWeightvalues:list):
         # Connect a Node to all nodes in the next layer
         NextNodes = self.getNodesinLayer(NodeA.Layer + 1)
         NewConnections = []
         for i in range(len(NextNodes)):
-            NewConnections.append(self.connectTwoNodes(NodeA, NextNodes[i], Initvalues[i]))
+            NewConnections.append(self.connectTwoNodes(NodeA, NextNodes[i], InitWeightvalues[i]))
         
         return NewConnections
         
-    def connectLayerToNextLayer(self, layer: int, InitValues: list):
+    def connectLayerToNextLayer(self, layer: int, InitWeightValues: list):
         # connects a Layer to the layer infront of it
         Layer = self.getNodesinLayer(layer)
         tmp = []
         for i in range(len(Layer)):
-            tmp.append(self.connectNodeToNextLayer(Layer[i], InitValues[i]))
+            tmp.append(self.connectNodeToNextLayer(Layer[i], InitWeightValues[i]))
         self.connections.append(tmp)
 
-    def createConnections(self):
+    def createConnections(self, initialWeightValues):
         for layer in range(self.LayerCount - 1): # subtract 1 for indexing, one because there should be 1 less connection layer than node layers
-            self.connectLayerToNextLayer(layer, self.createRandomConnectionWeights())
+            self.connectLayerToNextLayer(layer, initialWeightValues[layer])
 
     def createRandomConnectionWeights(self):
-        randomisedValues = []
-        for x in range(self.FrontLayerNodes):
-            tmp = []
-            for y in range(self.HiddenLayerNodes[0]):
-                tmp.append((random.random()*10)-5)
-        randomisedValues.append(tmp)
-        # this does not work at all yet
+        # calculate values for front -> first hidden layer connections
+        randomisedValues = [[[(random.random()-0.5)*2 for a in range(self.HiddenNodeCount)] for b in range(self.InitNodeCount)]]
+
+        if (self.HiddenLayerCount > 1):
+            # calculate values for hiddne layers -> hidden layers
+            for x in range(self.HiddenLayerCount - 1):
+                randomisedValues.append([[(random.random()-0.5)*2 for c in range(self.HiddenNodeCount)] for d in range(self.HiddenNodeCount)])
+
+        # calculate final hidden layer -> output layer weights
+        randomisedValues.append([[(random.random()-0.5)*2 for y in range(self.EndNodeCount)] for x in range(self.HiddenNodeCount)])
+        
+        return randomisedValues
         
 
     def getNodesinLayer(self, Layer):
@@ -150,30 +155,23 @@ class NueralNet:
             print(f"It brokey, Layer requested: {Layer}")
             exit()
 
-    def CalculateCost(self, outputs, expectedOutputs):
-        cost = 0
-        if (len(outputs) == len(expectedOutputs)):
-            for i in range(len(outputs)):
-                cost += (outputs[i] - expectedOutputs[i]) ** 2
-
-        return cost
-
-
-class TestingValues:
-    def __init__(self):
-        self.cost = 0
+# this is where all the training functions stuff go
+    def initializeTrainingData(self, batchSize):
         self.Runningcost = (0,0) #(Sumofcosts, amountofcostsadded)
         self.correctProbability = 0
         self.correctness = (0,0)
+        self.batchSize = batchSize
+        self.runningBatchChanges = [list([0] * self.InitNodeCount), list([0] * self.HiddenNodeCount) * self.HiddenLayerCount, list([0]*self.EndNodeCount)]
 
-    def UpdateVars(self):
+    def UpdateTrainingVars(self):
         self.cost = self.Runningcost[0] / self.Runningcost[1]
         self.correctProbability = self.correctness[0] / self.correctness[1]
 
 Network = NueralNet(4, 784, 10, 16)
 testData  = list([0.5] * 784)
 Network.Calculate(testData)
-outputNodes = True
+# Network.initializeTrainingData(100)
+outputNodes = False
 if (outputNodes):
     # # Front layer:
     # print("Front layer")
