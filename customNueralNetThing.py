@@ -65,8 +65,8 @@ class NueralNet:
 
     def Calculate(self, inputs: list):
         if (len(inputs) == len(self.FrontLayerNodes)):
-            for count in range(len(self.FrontLayerNodes)):
-                self.FrontLayerNodes[count].value = inputs[count]
+            for Node,inp in zip(self.FrontLayerNodes, inputs):
+                Node.value = inp
                 # put the input data into the front layer nodes
             
             count = 1
@@ -99,8 +99,8 @@ class NueralNet:
         # Connect a Node to all nodes in the next layer
         NextNodes = self.getNodesinLayer(NodeA.Layer + 1)
         NewConnections = []
-        for i in range(len(NextNodes)):
-            NewConnections.append(self.connectTwoNodes(NodeA, NextNodes[i], InitWeightvalues[i]))
+        for NextNode, Weight in zip(NextNodes, InitWeightvalues):
+            NewConnections.append(self.connectTwoNodes(NodeA, NextNode, Weight))
         
         return NewConnections
         
@@ -108,8 +108,8 @@ class NueralNet:
         # connects a Layer to the layer infront of it
         Layer = self.getNodesinLayer(layer)
         tmp = []
-        for i in range(len(Layer)):
-            tmp.append(self.connectNodeToNextLayer(Layer[i], InitWeightValues[i]))
+        for Node,Connection in zip(Layer, InitWeightValues):
+            tmp.append(self.connectNodeToNextLayer(Node, Connection))
         self.connections.append(tmp)
 
     def createConnections(self, initialWeightValues):
@@ -167,24 +167,38 @@ class NueralNet:
         self.cost = self.Runningcost[0] / self.Runningcost[1]
         self.correctProbability = self.correctness[0] / self.correctness[1]
 
-Network = NueralNet(4, 784, 10, 16)
-testData  = list([0.5] * 784)
-Network.Calculate(testData)
+    def singleTrainingCost(self, result: list, expectation: list):
+        if (len(result) == len(expectation)):
+            cost = 0
+            for exp,res in zip(expectation, result):
+                cost += (exp - res) ** 2
+            return (cost / 2)
+        else:
+            print(f"expectated data of length {len(expectation)} does not match data length {len(result)} of the result")
+
+
+# the code below is all just an exmaple of using the network to create a binary to denary convetor
+Network = NueralNet(2, 4, 4, 6)
+exampleInputs  = list([0] * 4)
+Network.Calculate(exampleInputs)
 # Network.initializeTrainingData(100)
-outputNodes = False
-if (outputNodes):
-    # # Front layer:
-    # print("Front layer")
-    # for Node in Network.FrontLayerNodes:
-    #     print(Node.value)
+ShowOutputs = True
+ShowHiddenLayers = False
+
+if (ShowHiddenLayers):
     # Hidden layers:
     print("Hidden Layers")
     for Layer in Network.HiddenLayerNodes:
         for Node in Layer:
             print(Node.value)
+
+if (ShowOutputs):
     # back layer:
     print("Back Layer")
     for Node in Network.BackLayerNodes:
         print(Node.value)
 
 del(Network)
+
+# the output data represents: [0,1,2,3]
+testData = [([0,0],[1,0,0,0]),([0,1],[0,1,0,0]),([1,0],[0,0,1,0]),([1,1],[0,0,0,1])]
