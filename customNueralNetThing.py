@@ -1,5 +1,6 @@
 import time
 import math
+import random
 
 class node:
     def __init__(self, Layer, Num, bias):
@@ -10,23 +11,23 @@ class node:
 
 
 class connection:
-    def __init__(self, Layer, A, B, Init_Value, maxweight):
+    def __init__(self, Layer, A, B, Init_Value):
         self.Layer = Layer
         self.NodeA = A
         self.NodeB = B
         self.value = Init_Value
-        self.weight = 1
-        self.maxWeight = maxweight
+        # self.weight = 1
+        # self.maxWeight = maxweight
 
     def send(self):
         self.NodeB.value = self.NodeA.value * self.value
 
     def tweak(self, tweak):
         self.value *= (tweak / self.weight)
-        self.weight *= 1.01 
+        # self.weight *= 1.01
 
 
-class Handler:
+class NueralNet:
     def __init__(self, Layers, InitCount, EndCount, HiddenCount):
         # Set up initial variables
         self.LayerCount = Layers
@@ -61,7 +62,6 @@ class Handler:
         self.createConnections()
         createTime = time.time() - startTime
         print(f'Network took {createTime} seconds to create')
-        print(len(self.connections))
 
     def Calculate(self, inputs: list):
         if (len(inputs) == len(self.FrontLayerNodes)):
@@ -69,47 +69,62 @@ class Handler:
                 self.FrontLayerNodes[count].value = inputs[count]
                 # put the input data into the front layer nodes
             
+            count = 1
             for connectionLayer in self.connections:
                 for connectionNodeA in connectionLayer:
                     for connectionNodeB in connectionNodeA:
-                        connectionNodeB.NodeB.value += (connectionNodeB.weight * connectionNodeB.NodeA.value)
+                        connectionNodeB.NodeB.value += (connectionNodeB.value * connectionNodeB.NodeA.value)
+                self.CorrectLayerNodes(self.getNodesinLayer(count))
+                count += 1
 
         else:
             print(f'Input size of {len(inputs)} is not equal to the required {len(self.FrontLayerNodes)} needed.')
 
-    def CalcLayer(self, Layerconnections: list):
-        for connection in Layerconnections:
-            tmpSum = 0
-                
+    def CorrectLayerNodes(self, layer: list):
+        for node in layer:
+            node.value = self.Sigmoid(node.value - node.bias)
 
-    def Sigmoid(value):
-        return (1/(1+math.exp(-value)))
+    def Sigmoid(self, value):
+        try:
+            return (1/(1+math.exp(-value)))
+        except Exception:
+            print(-value)
 
-    def connectTwoNodes(self, NodeA: node, NodeB: node, Init_Value=0.5, maxWeight=100):
+    def connectTwoNodes(self, NodeA: node, NodeB: node, Init_Value):
         # This funky wunky function connects two Nodes by creating a connection object between the two
-        NewConnection = connection(NodeA.Layer, NodeA, NodeB, Init_Value, maxWeight)
+        NewConnection = connection(NodeA.Layer, NodeA, NodeB, Init_Value)
         return NewConnection
 
-    def connectNodeToNextLayer(self, NodeA: node):
+    def connectNodeToNextLayer(self, NodeA: node, Initvalues:list):
         # Connect a Node to all nodes in the next layer
         NextNodes = self.getNodesinLayer(NodeA.Layer + 1)
         NewConnections = []
-        for node in NextNodes:
-            NewConnections.append(self.connectTwoNodes(NodeA, node))
+        for i in range(len(NextNodes)):
+            NewConnections.append(self.connectTwoNodes(NodeA, NextNodes[i], Initvalues[i]))
         
         return NewConnections
         
-    def connectLayerToNextLayer(self, layer: int):
+    def connectLayerToNextLayer(self, layer: int, InitValues: list):
         # connects a Layer to the layer infront of it
         Layer = self.getNodesinLayer(layer)
         tmp = []
-        for node in Layer:
-            tmp.append(self.connectNodeToNextLayer(node))
+        for i in range(len(Layer)):
+            tmp.append(self.connectNodeToNextLayer(Layer[i], InitValues[i]))
         self.connections.append(tmp)
 
     def createConnections(self):
         for layer in range(self.LayerCount - 1): # subtract 1 for indexing, one because there should be 1 less connection layer than node layers
-            self.connectLayerToNextLayer(layer)
+            self.connectLayerToNextLayer(layer, self.createRandomConnectionWeights())
+
+    def createRandomConnectionWeights(self):
+        randomisedValues = []
+        for x in range(self.FrontLayerNodes):
+            tmp = []
+            for y in range(self.HiddenLayerNodes[0]):
+                tmp.append((random.random()*10)-5)
+        randomisedValues.append(tmp)
+        # this does not work at all yet
+        
 
     def getNodesinLayer(self, Layer):
         # Pretty basic explantion but this just returns all Nodes from a specific Layer
@@ -135,16 +150,35 @@ class Handler:
             print(f"It brokey, Layer requested: {Layer}")
             exit()
 
+    def CalculateCost(self, outputs, expectedOutputs):
+        cost = 0
+        if (len(outputs) == len(expectedOutputs)):
+            for i in range(len(outputs)):
+                cost += (outputs[i] - expectedOutputs[i]) ** 2
 
-Network = Handler(5, 784, 10, 16)
-testData  = list([0.1] * 784)
+        return cost
+
+
+class TestingValues:
+    def __init__(self):
+        self.cost = 0
+        self.Runningcost = (0,0) #(Sumofcosts, amountofcostsadded)
+        self.correctProbability = 0
+        self.correctness = (0,0)
+
+    def UpdateVars(self):
+        self.cost = self.Runningcost[0] / self.Runningcost[1]
+        self.correctProbability = self.correctness[0] / self.correctness[1]
+
+Network = NueralNet(4, 784, 10, 16)
+testData  = list([0.5] * 784)
 Network.Calculate(testData)
 outputNodes = True
 if (outputNodes):
-    # Front layer:
-    print("Front layer")
-    for Node in Network.FrontLayerNodes:
-        print(Node.value)
+    # # Front layer:
+    # print("Front layer")
+    # for Node in Network.FrontLayerNodes:
+    #     print(Node.value)
     # Hidden layers:
     print("Hidden Layers")
     for Layer in Network.HiddenLayerNodes:
