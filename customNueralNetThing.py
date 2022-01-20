@@ -178,12 +178,12 @@ class NueralNet:
 
 
 # the code below is all just an exmaple of using the network to create a binary to denary convetor
-Network = NueralNet(2, 4, 4, 6)
-exampleInputs  = list([0] * 4)
+Network = NueralNet(5, 784, 10, 16)
+exampleInputs  = list([0] * 784)
 Network.Calculate(exampleInputs)
 # Network.initializeTrainingData(100)
 ShowOutputs = True
-ShowHiddenLayers = False
+ShowHiddenLayers = True
 
 if (ShowHiddenLayers):
     # Hidden layers:
