@@ -217,8 +217,13 @@ class BatchChanges():
             
 
 # the code below is all just an exmaple of using the network to create a binary to denary convetor
-trainingData = [imageparser.get_training()[0] for x in range(100)]
+imageData = imageparser.get_training()
+trainingData = [imageData[0] for x in range(100)]
+print("hello")
 Network = NueralNet(5, len(trainingData[0][0]), len(trainingData[0][1]), 6)
+Network.Calculate(trainingData[0][0])
+origOutput = [Node.value for Node in Network.BackLayerNodes]
+
 Network.train(trainingData, 50)
 Network.Calculate(trainingData[0][0])
 print(f'Expected Output: {trainingData[0][1]}')
@@ -234,6 +239,7 @@ if (ShowHiddenLayers):
 
 if (ShowOutputs):
     # back layer:
+    print(f'Original Output: {origOutput}')
     print(f'Actual Output: {[Node.value for Node in Network.BackLayerNodes]}')
 
 del(Network)
