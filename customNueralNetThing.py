@@ -1,6 +1,7 @@
-import time
-import math
-import random
+import time;
+import math;
+import random;
+import imageparser;
 
 class node:
     def __init__(self, Layer, Num, bias):
@@ -8,6 +9,7 @@ class node:
         self.Num = Num
         self.value = 0
         self.bias = bias
+        self.prevCon = []
 
 
 class connection:
@@ -16,6 +18,7 @@ class connection:
         self.NodeA = A
         self.NodeB = B
         self.value = Init_Value
+        self.NodeB.prevCon.append(self)
         # self.weight = 1
         # self.maxWeight = maxweight
 
@@ -156,34 +159,42 @@ class NueralNet:
             exit()
 
 # this is where all the training functions stuff go
-    def initializeTrainingData(self, batchSize):
-        self.Runningcost = (0,0) #(Sumofcosts, amountofcostsadded)
-        self.correctProbability = 0
-        self.correctness = (0,0)
-        self.batchSize = batchSize
-        self.runningBatchChanges = [list([0] * self.InitNodeCount), list([0] * self.HiddenNodeCount) * self.HiddenLayerCount, list([0]*self.EndNodeCount)]
+    def train(self, training_data, batchSize):
+        curBatch = BatchChanges(self.LayerCount, self.InitNodeCount, self.HiddenNodeCount, self.EndNodeCount) # Init a new neural network that basically holds all the vars to be changed
 
-    def UpdateTrainingVars(self):
-        self.cost = self.Runningcost[0] / self.Runningcost[1]
-        self.correctProbability = self.correctness[0] / self.correctness[1]
+        for count in range(training_data): # run for each value in training data
+            givenResult = self.Calculate(training_data[count][0])   # calculate the current result using the input data
+            expectedResult = training_data[count][1]    # store the expected result
+            for i in range(givenResult,expectedResult):   
+                change = self.calcChange(expectedResult[i], givenResult[i])     # calculate the wanted change to the result based on the expected result
+                curBatch.changeNetwork.BackLayerNodes[i].bias = self.BackLayerNodes[i].bias * change
 
-    def singleTrainingCost(self, result: list, expectation: list):
-        if (len(result) == len(expectation)):
-            cost = 0
-            for exp,res in zip(expectation, result):
-                cost += (exp - res) ** 2
-            return (cost / 2)
-        else:
-            print(f"expectated data of length {len(expectation)} does not match data length {len(result)} of the result")
+    def storeNodeBiasChange(change, batchSize, changeNode):
+        changeNode.bias += change / batchSize
 
+    def storeWeightChange(change, batchSize, changeWeight):
+        changeWeight.value += change / batchSize
+
+    def calcChange(expValue, givenValue):
+        cost = (((expValue - givenValue)**2)/2) + 1
+        if (expValue < givenValue):
+            cost *= -1
+        return cost
+
+    def changeNode(node, expValue, batchSize):
+        pass
+
+
+class BatchChanges():
+    def __init__(self, layerCount, inpCount, hidCount, outCount):
+        self.changeNetwork = NueralNet(layerCount, inpCount, hidCount, outCount)
+            
 
 # the code below is all just an exmaple of using the network to create a binary to denary convetor
 Network = NueralNet(5, 784, 10, 16)
-exampleInputs  = list([0] * 784)
-Network.Calculate(exampleInputs)
-# Network.initializeTrainingData(100)
-ShowOutputs = True
-ShowHiddenLayers = True
+Network.train(imageparser.get_training(), 100)
+ShowOutputs = False
+ShowHiddenLayers = False
 
 if (ShowHiddenLayers):
     # Hidden layers:
@@ -195,10 +206,8 @@ if (ShowHiddenLayers):
 if (ShowOutputs):
     # back layer:
     print("Back Layer")
-    for Node in Network.BackLayerNodes:
-        print(Node.value)
+    print(Network.BackLayerNodes)
 
 del(Network)
 
 # the output data represents: [0,1,2,3]
-testData = [([0,0],[1,0,0,0]),([0,1],[0,1,0,0]),([1,0],[0,0,1,0]),([1,1],[0,0,0,1])]
