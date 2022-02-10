@@ -1,6 +1,8 @@
 import time;
 import math;
-import random;
+import random
+from tkinter import NE
+from turtle import back;
 import imageparser;
 
 class node:
@@ -74,12 +76,14 @@ class NueralNet:
             
             count = 1
             for connectionLayer in self.connections:
+
                 for connectionNodeA in connectionLayer:
                     for connectionNodeB in connectionNodeA:
                         connectionNodeB.NodeB.value += (connectionNodeB.value * connectionNodeB.NodeA.value)
                 self.CorrectLayerNodes(self.getNodesinLayer(count))
                 count += 1
 
+            return [Node.value for Node in self.BackLayerNodes]
         else:
             print(f'Input size of {len(inputs)} is not equal to the required {len(self.FrontLayerNodes)} needed.')
 
@@ -90,8 +94,8 @@ class NueralNet:
     def Sigmoid(self, value):
         try:
             return (1/(1+math.exp(-value)))
-        except Exception:
-            print(f"Sigmoid function as gone wrong using value {value}")
+        except Exception as e:
+            print(f"Sigmoid function has gone wrong using value {value}, error: {e}")
 
     def connectTwoNodes(self, NodeA: node, NodeB: node, Init_Weight_Value):
         # This funky wunky function connects two Nodes by creating a connection object between the two
@@ -162,38 +166,63 @@ class NueralNet:
     def train(self, training_data, batchSize):
         curBatch = BatchChanges(self.LayerCount, self.InitNodeCount, self.HiddenNodeCount, self.EndNodeCount) # Init a new neural network that basically holds all the vars to be changed
 
-        for count in range(training_data): # run for each value in training data
+        for count in range(len(training_data)): # run for each value in training data
+            print(f'Currently on training set: {count}')
             givenResult = self.Calculate(training_data[count][0])   # calculate the current result using the input data
             expectedResult = training_data[count][1]    # store the expected result
-            for i in range(givenResult,expectedResult):   
+
+            for i in range(len(givenResult)):   
                 change = self.calcChange(expectedResult[i], givenResult[i])     # calculate the wanted change to the result based on the expected result
-                curBatch.changeNetwork.BackLayerNodes[i].bias = self.BackLayerNodes[i].bias * change
+                self.StoreChanges(self.BackLayerNodes[i], curBatch.changeNetwork.BackLayerNodes[i], change, batchSize) # begin the back proporgation
 
-    def storeNodeBiasChange(change, batchSize, changeNode):
-        changeNode.bias += change / batchSize
+            if (count % batchSize == 0 and count != 0):
+                self.DoChanges(curBatch.changeNetwork)
+                # curBatch = BatchChanges(self.LayerCount, self.InitNodeCount, self.HiddenNodeCount, self.EndNodeCount) # Init a new neural network that basically holds all the vars to be changed
+                return
 
-    def storeWeightChange(change, batchSize, changeWeight):
-        changeWeight.value += change / batchSize
-
-    def calcChange(expValue, givenValue):
-        cost = (((expValue - givenValue)**2)/2) + 1
+    def calcChange(self, expValue, givenValue):
+        cost = self.Sigmoid(((expValue - givenValue)**2)/2)
         if (expValue < givenValue):
             cost *= -1
         return cost
 
-    def changeNode(node, expValue, batchSize):
-        pass
+    def MakeChangeSmaller(self, value):
+        mult = 1
+        if (value < 0):
+            mult = -1
+            value *= -1
 
+        return value * 0.1 * mult
+
+    def StoreChanges(self, node, storageNode, change, batchSize):
+        storageNode.bias += change / batchSize # change the bias
+        if (node.Layer != 0):    # check if we're at the input layer or not
+            for accConection, storConnection in zip(node.prevCon, storageNode.prevCon):
+                storConnection.value += change / batchSize  # change the value of the conneciton between this node and previous nodes
+                self.StoreChanges(accConection.NodeA, storConnection.NodeA, self.MakeChangeSmaller(change), batchSize) # change the previous nodes
+
+    def DoChanges(self, storageNetwork):
+        for i in range(self.LayerCount):
+            for node,storageNode in zip(self.getNodesinLayer(i), storageNetwork.getNodesinLayer(i)):
+                node.bias += storageNode.bias
+
+        for connectionLayer,storageConnectionLayer in zip(self.connections, storageNetwork.connections):
+            for connectionNode, storageConnectionNode in zip(connectionLayer, storageConnectionLayer):
+                for connection, storageConnection in zip(connectionNode, storageConnectionNode):
+                    connection.value += storageConnection.value
 
 class BatchChanges():
     def __init__(self, layerCount, inpCount, hidCount, outCount):
-        self.changeNetwork = NueralNet(layerCount, inpCount, hidCount, outCount)
+        self.changeNetwork = NueralNet(layerCount, inpCount, outCount, hidCount)
             
 
 # the code below is all just an exmaple of using the network to create a binary to denary convetor
-Network = NueralNet(5, 784, 10, 16)
-Network.train(imageparser.get_training(), 100)
-ShowOutputs = False
+trainingData = [imageparser.get_training()[0] for x in range(100)]
+Network = NueralNet(5, len(trainingData[0][0]), len(trainingData[0][1]), 6)
+Network.train(trainingData, 50)
+Network.Calculate(trainingData[0][0])
+print(f'Expected Output: {trainingData[0][1]}')
+ShowOutputs = True
 ShowHiddenLayers = False
 
 if (ShowHiddenLayers):
@@ -205,8 +234,7 @@ if (ShowHiddenLayers):
 
 if (ShowOutputs):
     # back layer:
-    print("Back Layer")
-    print(Network.BackLayerNodes)
+    print(f'Actual Output: {[Node.value for Node in Network.BackLayerNodes]}')
 
 del(Network)
 
