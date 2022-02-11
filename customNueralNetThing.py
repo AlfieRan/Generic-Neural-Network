@@ -239,3 +239,5 @@ if (ShowOutputs):
     print(f'Actual Output: {[Node.value for Node in Network.BackLayerNodes]}')
 
 del(Network)
+
+# the output data represents: [0,1,2,3]
