@@ -1,8 +1,6 @@
 import time;
 import math;
 import random
-from tkinter import NE
-from turtle import back;
 import imageparser;
 
 class node:
@@ -186,20 +184,18 @@ class NueralNet:
             cost *= -1
         return cost
 
-    def MakeChangeSmaller(self, value):
-        mult = 1
-        if (value < 0):
-            mult = -1
-            value *= -1
+    def calcApproxEstimate(self, accValueofThisNode, expValueofNextNode, accValueofNextNode, bias, amountOfConnections):
+        magnitude = self.calcChange(expValueofNextNode, accValueofNextNode)
+        change = self.calcChange((expValueofNextNode - bias) / (amountOfConnections / magnitude), accValueofThisNode)
+        return change
 
-        return value * 0.1 * mult
 
     def StoreChanges(self, node, storageNode, change, batchSize):
         storageNode.bias += change / batchSize # change the bias
         if (node.Layer != 0):    # check if we're at the input layer or not
             for accConection, storConnection in zip(node.prevCon, storageNode.prevCon):
                 storConnection.value += change / batchSize  # change the value of the conneciton between this node and previous nodes
-                self.StoreChanges(accConection.NodeA, storConnection.NodeA, self.MakeChangeSmaller(change), batchSize) # change the previous nodes
+                self.StoreChanges(accConection.NodeA, storConnection.NodeA, self.calcApproxEstimate(accConection.NodeA.value, storConnection.NodeB.value, accConection.NodeB.value, accConection.NodeB.bias, len(accConection.NodeB.prevCon)), batchSize) # change the previous nodes
 
     def DoChanges(self, storageNetwork):
         for i in range(self.LayerCount):
@@ -224,7 +220,7 @@ Network = NueralNet(5, len(trainingData[0][0]), len(trainingData[0][1]), 6)
 Network.Calculate(trainingData[0][0])
 origOutput = [Node.value for Node in Network.BackLayerNodes]
 
-Network.train(trainingData, 50)
+Network.train(trainingData, 1)
 Network.Calculate(trainingData[0][0])
 print(f'Expected Output: {trainingData[0][1]}')
 ShowOutputs = True
@@ -243,5 +239,3 @@ if (ShowOutputs):
     print(f'Actual Output: {[Node.value for Node in Network.BackLayerNodes]}')
 
 del(Network)
-
-# the output data represents: [0,1,2,3]
