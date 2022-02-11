@@ -1,8 +1,6 @@
 import time;
 import math;
 import random
-from tkinter import NE
-from turtle import back;
 import imageparser;
 
 class node:
