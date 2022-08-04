@@ -1,10 +1,23 @@
 import numpy as np
-from matplotlib import pyplot as plt
 import v2_imageParser as ip
 import math
+from matplotlib import pyplot as plt
 
-X_TESTING, Y_TESTING = ip.get_training()
-X_TRAINING, Y_TRAINING = ip.get_testing()
+
+# Configuration settings
+TESTING_DATA, TESTING_LABELS = ip.get_training()
+TRAINING_DATA, TRAINING_LABELS = ip.get_testing()
+
+MODE = "TRAIN" # TRAIN, TEST or OTHER
+
+LOAD_FILE = True
+SAVE_FILE_AFTER_TRAINING = True
+FILE_PATH = "./weights.npy"
+
+TRAINING_ITERATIONS = 50000
+LEARNING_RATE = 0.1
+LAYERS=[784, 6, 6, 6, 10]
+
 
 # currenctly called as init_params([784, 6, 6, 6, 10])
 def init_params(layers: list):
@@ -23,31 +36,33 @@ def softmax(inp):
     # print(f"Max Exp: {np.max(inp)}")
     return np.exp(inp) / sum(np.exp(inp))
 
-def forward_prop(X, Weights, Biases):
-    Z = []
-    A = []
-    last = X
+def forward_prop(Data, Weights, Biases):
+    # Raw is used to store raw values for backpropagation later
+    # Filtered is used to store the values after the activation function, this is the output of the layer
+    Raw = []
+    Filtered = []
+    last = Data
 
     for i in range(len(Weights)):
         # print(f"\n\nWeights {i} shape: {Weights[i].shape}\nBiases {i} shape: {Biases[i].shape}\n last shape: {last.shape}")
         # print(f"Max value in last: {np.max(last)}")
-        Z.append(Weights[i].dot(last) + Biases[i])
+        Raw.append(Weights[i].dot(last) + Biases[i])
         if (i == len(Weights) - 1):
             # print(f"Layer: {i}, using softmax")
             # print(Z[i].shape)
-            A.append(softmax(Z[i]))
+            Filtered.append(softmax(Raw[i]))
         else:
             # print(f"Layer: {i}, using ReLU")
-            A.append(ReLU(Z[i]))
+            Filtered.append(ReLU(Raw[i]))
 
-        last = A[i]
+        last = Filtered[i]
 
-    return A, Z
+    return Filtered, Raw
 
 def one_hot(Y):
-    one_hot_Y = np.zeros((Y.size, Y.max() + 1))
+    one_hot_Y = np.zeros((Y.size, Y.max() + 1)) # +1 to account for 0 index
     one_hot_Y[np.arange(Y.size), Y] = 1
-    one_hot_Y = one_hot_Y.T
+    one_hot_Y = one_hot_Y.T # transpose to make it a column vector
     return one_hot_Y
 
 def deriv_ReLU(inp):
@@ -97,8 +112,10 @@ def get_accuracy(predictions, Y):
     # print(predictions, Y)
     return np.sum(predictions == Y) / Y.size
 
-def gradient_descent(X, Y, iterations, alpha):
-    Weights, Biases = init_params([784, 6, 6, 10])
+def gradient_descent(X, Y, iterations, alpha, layers=[784, 6, 6, 6, 10], Weights=None, Biases=None):
+    # Train the network using gradient descent
+    if Weights is None or Biases is None:
+        Weights, Biases = init_params(layers)
 
     for i in range(iterations):
         A, Z = forward_prop(X, Weights, Biases)
@@ -112,5 +129,58 @@ def gradient_descent(X, Y, iterations, alpha):
     print(f"Final Accuracy: {get_accuracy(get_predictions(A[-1]), Y)*100}%")
     return Weights, Biases
 
+def test_prediction(index, Weights, Biases):
+    img = TESTING_DATA[:, index].reshape(28, 28) * 255
 
-Weights, Biases = gradient_descent(X_TRAINING, Y_TRAINING, 50000, 0.1)
+    predictions, _ = forward_prop(TESTING_DATA[:, index, None], Weights, Biases) # _ is the Z values, we don't need them - we just want the predictions
+    prediction = get_predictions(predictions[-1]) # the predictions are for each layer, so just select the last one as that is the output layer
+    plt.xlabel(f"Prediction: {prediction}, Actual: {TESTING_LABELS[index]}")
+    plt.imshow(img, cmap='gray', interpolation='nearest')
+    plt.show()
+
+
+
+# HANDLING LOADING/SAVING WEIGHTS AND BIASES
+def load_network():
+    print("Loading network...")
+    return np.load(FILE_PATH, allow_pickle=True)
+
+def save_network(data):
+    print("Saving network...")
+    np.save(FILE_PATH, data)
+
+def train():
+    Weights, Biases = [None]*2
+
+    if LOAD_FILE:
+        data = load_network()
+        Weights, Biases = data[0], data[1]
+    
+    Weights, Biases = gradient_descent(TRAINING_DATA, TRAINING_LABELS, TRAINING_ITERATIONS, LEARNING_RATE, layers=LAYERS, Weights=Weights, Biases=Biases)
+
+    if SAVE_FILE_AFTER_TRAINING:
+        data = [Weights, Biases]
+        save_network(data)
+
+    print("Finished training")
+    return Weights, Biases
+
+def process_input(input, Weights=None, Biases=None):
+    if Weights is None or Biases is None:
+        Weights, Biases = load_network()
+    
+    predictions, _ = forward_prop(input, Weights, Biases) # _ is the Z values, we don't need them - we just want the predictions
+    return predictions # the predictions are for each layer, bare in mind for outputting
+
+
+def run():
+    if MODE == "TRAIN":
+        train()
+    elif MODE == "TEST":
+        Weights, Biases = load_network()
+        test_prediction(0, Weights, Biases)
+    else:
+        print(f"Network launched in mode {MODE}, waiting.")
+
+
+run()
