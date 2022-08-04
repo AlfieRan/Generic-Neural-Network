@@ -1,25 +1,46 @@
 import numpy as np
-import v2_imageParser as ip
 import math
-from matplotlib import pyplot as plt
 
+# MNIST STUFF - COMMENT OUT IF NOT USING
+import v2_imageParser as ip 
+from matplotlib import pyplot as plt 
+TESTING_DATA, TESTING_LABELS = ip.get_training() 
+TRAINING_DATA, TRAINING_LABELS = ip.get_testing() 
+# MNIST STUFF - COMMENT OUT IF NOT USING
+
+# OTHER - COMMENT IN IF NOT USING MNIST
+# TESTING_DATA, TESTING_LABELS = 
+# TRAINING_DATA, TRAINING_LABELS = 
+# OTHER - COMMENT IN IF NOT USING MNIST
 
 # Configuration settings
-TESTING_DATA, TESTING_LABELS = ip.get_training()
-TRAINING_DATA, TRAINING_LABELS = ip.get_testing()
-
 MODE = "TRAIN" # TRAIN, TEST or OTHER
 
 LOAD_FILE = True
 SAVE_FILE_AFTER_TRAINING = True
 FILE_PATH = "./weights.npy"
 
-TRAINING_ITERATIONS = 50000
-LEARNING_RATE = 0.1
+TRAINING_ITERATIONS = 1000
+LEARNING_RATE = 0.01
 LAYERS=[784, 6, 6, 6, 10]
 
 
-# currenctly called as init_params([784, 6, 6, 6, 10])
+# This is the only function that needs code to be changed for MNIST
+def test_prediction(index, Weights, Biases):
+    img = TESTING_DATA[:, index].reshape(28, 28) * 255
+
+    predictions, _ = forward_prop(TESTING_DATA[:, index, None], Weights, Biases) # _ is the Z values, we don't need them - we just want the predictions
+    prediction = get_predictions(predictions[-1]) # the predictions are for each layer, so just select the last one as that is the output layer
+    
+    # MNIST STUFF - COMMENT OUT IF NOT USING MNIST
+    plt.xlabel(f"Prediction: {prediction}, Actual: {TESTING_LABELS[index]}")
+    plt.imshow(img, cmap='gray', interpolation='nearest')
+    plt.show()
+    # MNIST STUFF - COMMENT OUT IF NOT USING MNIST
+
+
+
+
 def init_params(layers: list):
     Weights = [np.random.randn(layers[i+1], layers[i]) for i in range(len(layers)-1)]
     Biases = [np.random.randn(layers[i+1], 1) for i in range(len(layers)-1)]
@@ -128,17 +149,6 @@ def gradient_descent(X, Y, iterations, alpha, layers=[784, 6, 6, 6, 10], Weights
 
     print(f"Final Accuracy: {get_accuracy(get_predictions(A[-1]), Y)*100}%")
     return Weights, Biases
-
-def test_prediction(index, Weights, Biases):
-    img = TESTING_DATA[:, index].reshape(28, 28) * 255
-
-    predictions, _ = forward_prop(TESTING_DATA[:, index, None], Weights, Biases) # _ is the Z values, we don't need them - we just want the predictions
-    prediction = get_predictions(predictions[-1]) # the predictions are for each layer, so just select the last one as that is the output layer
-    plt.xlabel(f"Prediction: {prediction}, Actual: {TESTING_LABELS[index]}")
-    plt.imshow(img, cmap='gray', interpolation='nearest')
-    plt.show()
-
-
 
 # HANDLING LOADING/SAVING WEIGHTS AND BIASES
 def load_network():
