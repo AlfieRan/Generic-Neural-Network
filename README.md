@@ -1,4 +1,4 @@
-# UniversalNueralNetwork
+# Generic Neural Network
 
 This is a Generic Neural Network built using numpy and matricies that theoretically can be applied to any python project it is wished to be used in.
 
