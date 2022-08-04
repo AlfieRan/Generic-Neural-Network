@@ -26,7 +26,7 @@ LAYERS=[784, 6, 6, 6, 10]
 
 
 # This is the only function that needs code to be changed for MNIST
-def test_prediction(index, Weights, Biases):
+def make_prediction(index, Weights, Biases):
     img = TESTING_DATA[:, index].reshape(28, 28) * 255
 
     predictions, _ = forward_prop(TESTING_DATA[:, index, None], Weights, Biases) # _ is the Z values, we don't need them - we just want the predictions
@@ -188,7 +188,7 @@ def run():
         train()
     elif MODE == "TEST":
         Weights, Biases = load_network()
-        test_prediction(0, Weights, Biases)
+        make_prediction(0, Weights, Biases)
     else:
         print(f"Network launched in mode {MODE}, waiting.")
 
