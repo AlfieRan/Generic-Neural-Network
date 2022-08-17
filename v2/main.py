@@ -20,9 +20,14 @@ LOAD_FILE = True
 SAVE_FILE_AFTER_TRAINING = True
 FILE_PATH = "./weights.npy"
 
-TRAINING_ITERATIONS = 1000
-LEARNING_RATE = 0.01
-LAYERS=[784, 6, 6, 6, 10]
+TRAINING_ITERATIONS = 1000  # How many training iterations to run
+LEARNING_RATE = 0.05        # 0.5 is the defualt for a new network
+LEARNING_DECAY = 0.999      # This is multiplied by the current learning rate after each iteration to decay it
+LAYERS=[784, 100, 20, 6, 6, 6, 10]  # The number of nodes/nuerons in each layer: [inputs, ...h, ouputs] where h is the hidden layers
+
+# GLOBALS
+global Learning_Current
+Learning_Current = LEARNING_RATE
 
 
 # This is the only function that needs code to be changed for MNIST
@@ -42,8 +47,8 @@ def make_prediction(index, Weights, Biases):
 
 
 def init_params(layers: list):
-    Weights = [np.random.randn(layers[i+1], layers[i]) for i in range(len(layers)-1)]
-    Biases = [np.random.randn(layers[i+1], 1) for i in range(len(layers)-1)]
+    Weights = [np.random.rand(layers[i+1], layers[i]) - 0.5 for i in range(len(layers)-1)]
+    Biases = [np.random.rand(layers[i+1], 1) - 0.5 for i in range(len(layers)-1)]
 
     return Weights, Biases
 
@@ -118,12 +123,14 @@ def back_prop(A, Z, Weights, X, Y):
 
     return dW, dB
 
-def update_params(dW, dB, Weights, Biases, alpha):
+def update_params(dW, dB, Weights, Biases):
+    global Learning_Current
     for i in range(len(Weights)):
         # print(f"\n\nRunning for layer: {i}\nWeights {i} shape: {Weights[i].shape}\nBiases {i} shape: {Biases[i].shape}\n dW {i} shape: {dW[i].shape}\n dB {i}: {dB[i]}")
-        Weights[i] -= alpha * dW[i]
-        Biases[i] -= alpha * dB[i]
+        Weights[i] -= Learning_Current * dW[i]
+        Biases[i] -= Learning_Current * dB[i]
 
+    Learning_Current *= LEARNING_DECAY
     return Weights, Biases
 
 def get_predictions(A):
@@ -133,7 +140,7 @@ def get_accuracy(predictions, Y):
     # print(predictions, Y)
     return np.sum(predictions == Y) / Y.size
 
-def gradient_descent(X, Y, iterations, alpha, layers=[784, 6, 6, 6, 10], Weights=None, Biases=None):
+def gradient_descent(X, Y, iterations, layers=[784, 6, 6, 6, 10], Weights=None, Biases=None):
     # Train the network using gradient descent
     if Weights is None or Biases is None:
         Weights, Biases = init_params(layers)
@@ -141,7 +148,7 @@ def gradient_descent(X, Y, iterations, alpha, layers=[784, 6, 6, 6, 10], Weights
     for i in range(iterations):
         A, Z = forward_prop(X, Weights, Biases)
         dW, dB = back_prop(A, Z, Weights, X, Y)
-        Weights, Biases = update_params(dW, dB, Weights, Biases, alpha)
+        Weights, Biases = update_params(dW, dB, Weights, Biases)
 
         if (i % math.ceil(iterations / 25) == 0): # print every 1/100th of the iterations
             predictions = get_predictions(A[-1])
@@ -166,7 +173,7 @@ def train():
         data = load_network()
         Weights, Biases = data[0], data[1]
     
-    Weights, Biases = gradient_descent(TRAINING_DATA, TRAINING_LABELS, TRAINING_ITERATIONS, LEARNING_RATE, layers=LAYERS, Weights=Weights, Biases=Biases)
+    Weights, Biases = gradient_descent(TRAINING_DATA, TRAINING_LABELS, TRAINING_ITERATIONS, layers=LAYERS, Weights=Weights, Biases=Biases)
 
     if SAVE_FILE_AFTER_TRAINING:
         data = [Weights, Biases]
