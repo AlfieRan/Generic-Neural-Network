@@ -13,7 +13,7 @@ This is a Generic Neural Network built using numpy and matricies that theoretica
 The two absolutely key modules required are **math** and **numpy**, math is preinstalled with python and numpy can be installed using `pip3 install numpy`.
 
 In order to use v2 with the MNIST data set provided in "samples" the **python-mnist** module must also be installed using `pip3 install python-mnist`.
-Thn the **matplotlib** module can be installed to output the images for showcasing - if this is not required then you must comment out the `from matplotlib import pyplot as plt` line and the three lines that refer to `plt` in the `make_prediction` function.
+Then the **matplotlib** module can be installed to output the images for showcasing - if this is not required then you must comment out the `from matplotlib import pyplot as plt` line and the three lines that refer to `plt` in the `make_prediction` function.
 
 If the MNIST data is not to be used the lines at the top of the main.py script referenced with "Comment this out if the MNIST dataset is not to be used" should be commented out.
 
