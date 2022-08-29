@@ -1,14 +1,8 @@
 # Generic Neural Network
 
-This is a Generic Neural Network built using numpy and matricies that theoretically can be applied to any python project it is wished to be used in.
+This is a Generic Neural Network built using numpy and matrices that theoretically can be applied to any python project it is wished to be used in.
 
-**V1 does not work**
-(This was an attempt at creating an OOP nueral network to make it easier to understand and process what's going on for people who aren't used to ai)
-
-**V2 does work**
-(This is built using numpy and matricies and is a lot harder to follow but does work)
-
-# How to use
+# Setup
 
 The two absolutely key modules required are **math** and **numpy**, math is preinstalled with python and numpy can be installed using `pip3 install numpy`.
 
@@ -17,7 +11,12 @@ Then the **matplotlib** module can be installed to output the images for showcas
 
 If the MNIST data is not to be used the lines at the top of the main.py script referenced with "Comment this out if the MNIST dataset is not to be used" should be commented out.
 
-# IMPORTANT
+# Running
 
-Please bare in mind that if you feed any kind of mismatching data into the network it will crash with some form of error, as the project does not currently have any top level error handling.
-This should be solved soon but in the mean time you may need to be aware.
+To run the network, change any required setup constants in the top of the ``main.py`` file within the area labeled ``Configuration settings``.
+Then cd/move into the ``src`` (source) folder and run ``python3 main.py``.
+
+## Mismatching Data will Crash the Program
+
+Please bear in mind that if you feed any kind of mismatching data into the network it will crash with some form of error, as the project does not currently have any top level error handling.
+This should be solved soon but in the meantime you may need to be aware.
